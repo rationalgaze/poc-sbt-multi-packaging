@@ -1,4 +1,3 @@
-import NativePackagerHelper._
 import sbt.Keys.mappings
 
 name := "poc-multi-project"
@@ -13,6 +12,7 @@ lazy val common = project
   .settings(
     name := "common",
     assemblySettings,
+    zipSettings,
     mappings in Universal += {
       val oozie = (sourceDirectory.value).getParentFile / "oozie" / "somewf_file.xml"
       oozie -> "oozie/file.xml"
@@ -29,8 +29,9 @@ lazy val module1 = project
   .settings(
     name := "module1",
     assemblySettings,
+    zipSettings,
     mappings in Universal += {
-      val oozie = (sourceDirectory.value).getParentFile / "oozie" / "config.xml"
+      val oozie = sourceDirectory.value.getParentFile / "oozie" / "config.xml"
       oozie -> "oozie/config.xml"
     },
     mappings in Universal += {
@@ -38,6 +39,10 @@ lazy val module1 = project
       jar -> "jar/module1.jar"
     }
   )
+
+def zipSettings = Seq(
+  packageName in Universal := packageName.value
+)
 
 lazy val assemblySettings = Seq(
   assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false),
