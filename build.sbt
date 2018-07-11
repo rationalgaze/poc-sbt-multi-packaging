@@ -1,27 +1,23 @@
 import sbt.Keys.mappings
+import NativePackagerHelper._
 
 name := "poc-multi-project"
 
 version := "0.1"
 
-scalaVersion := "2.11.8"
+scalaVersion in ThisBuild := "2.11.8"
 
 lazy val common = project
   .in(file("common"))
   .enablePlugins(UniversalPlugin)
   .settings(
     name := "common",
-    assemblySettings,
     zipSettings,
-    mappings in Universal += {
-      val oozie = (sourceDirectory.value).getParentFile / "oozie" / "somewf_file.xml"
-      oozie -> "oozie/file.xml"
-    },
-    mappings in Universal += {
-      val jar = target.value / "scala-2.12" / "common.jar"
-      jar -> "jar/common.jar"
-    }
+    mappings in Universal ++= directory("common/build"),
+    mappings in Universal ++= directory("common/config"),
+    mappings in Universal ++= directory("common/livraison")
   )
+  .disablePlugins(AssemblyPlugin)
 
 lazy val module1 = project
   .in(file("module1"))
@@ -30,23 +26,45 @@ lazy val module1 = project
     name := "module1",
     assemblySettings,
     zipSettings,
-    mappings in Universal += {
-      val oozie = sourceDirectory.value.getParentFile / "oozie" / "config.xml"
-      oozie -> "oozie/config.xml"
-    },
-    mappings in Universal += {
-      val jar = target.value / "scala-2.12" / "module1.jar"
-      jar -> "jar/module1.jar"
-    }
+    mappings in Universal ++= directory("module1/oozie"),
+    mappings in Universal ++= directory("module1/target/jar")
   )
 
+lazy val module2 = project
+  .in(file("module2"))
+  .enablePlugins(UniversalPlugin)
+  .settings(
+    name := "module2",
+    assemblySettings,
+    zipSettings,
+    mappings in Universal ++= directory("module2/oozie"),
+    mappings in Universal ++= directory("module2/target/jar")
+)
+
+
+// DEPENDENCIES
+lazy val dependencies = new {
+  val sparkVersion = "2.1.0"
+
+  val oozie = "org.apache.oozie" % "oozie-client" % "4.1.0"
+  val spark = "org.apache.spark" %% "spark-core" % sparkVersion % "provided" withSources() withJavadoc()
+  val sparkSql = "org.apache.spark" %% "spark-sql" % sparkVersion % "provided" withSources() withJavadoc()
+}
+
+lazy val commonDependencies = Seq(
+  dependencies.oozie,
+  dependencies.spark,
+  dependencies.sparkSql
+)
+
+// SETTINGS
 def zipSettings = Seq(
   packageName in Universal := packageName.value
 )
 
 lazy val assemblySettings = Seq(
   assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false),
-  assemblyJarName in assembly := name.value + ".jar",
+  assemblyOutputPath in assembly := file(s"${name.value}/target/jar/${name.value}.jar"),
   assemblyMergeStrategy in assembly := {
     case PathList("META-INF", xs @ _*) => MergeStrategy.discard
     case _                             => MergeStrategy.first
