@@ -7,6 +7,7 @@ version := "0.1"
 
 scalaVersion in ThisBuild := "2.11.8"
 
+// common files, scripts, xmls
 lazy val common = project
   .in(file("common"))
   .enablePlugins(UniversalPlugin)
@@ -17,8 +18,10 @@ lazy val common = project
     mappings in Universal ++= directory("common/config"),
     mappings in Universal ++= directory("common/livraison")
   )
+  // do not use assembly this project
   .disablePlugins(AssemblyPlugin)
 
+// first scala/spark project with oozie folder containing work flow xml
 lazy val module1 = project
   .in(file("module1"))
   .enablePlugins(UniversalPlugin)
@@ -30,6 +33,7 @@ lazy val module1 = project
     mappings in Universal ++= directory("module1/target/jar")
   )
 
+// first scala/spark project with oozie folder containing work flow xml
 lazy val module2 = project
   .in(file("module2"))
   .enablePlugins(UniversalPlugin)
@@ -63,6 +67,7 @@ def zipSettings = Seq(
 )
 
 lazy val assemblySettings = Seq(
+  // remove scala .jar
   assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false),
   assemblyOutputPath in assembly := file(s"${name.value}/target/jar/${name.value}.jar"),
   assemblyMergeStrategy in assembly := {
